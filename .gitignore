@@ -1,0 +1,6 @@
+﻿ai-meeting-extractor/backend/__pycache__/
+ai-meeting-extractor/backend/**/__pycache__/
+ai-meeting-extractor/backend/.env
+ai-meeting-extractor/frontend/node_modules/
+ai-meeting-extractor/frontend/dist/
+.vscode/
