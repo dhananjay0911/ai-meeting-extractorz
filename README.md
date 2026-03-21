@@ -19,14 +19,6 @@ You upload a meeting transcript file → AI reads it → extracts every action i
 
 ---
 
-## 🖥️ Live Demo
-
-| Service | URL |
-|---|---|
-| **Frontend** | https://ai-meeting-extractorz.vercel.app |
-| **Backend API** | https://ai-meeting-backend.onrender.com |
-| **API Docs** | https://ai-meeting-backend.onrender.com/docs |
-
 ---
 
 ## ✨ Features
