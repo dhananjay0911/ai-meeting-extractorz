@@ -10,7 +10,11 @@ CORS(app)
 
 @app.route('/')
 def root():
-    return jsonify({"status": "running", "provider": "Google Gemini", "key_loaded": bool(os.environ.get("GEMINI_API_KEY"))})
+    return jsonify({
+        "status": "running",
+        "provider": "Google Gemini",
+        "key_loaded": bool(os.environ.get("GEMINI_API_KEY"))
+    })
 
 @app.route('/api/extract', methods=['POST'])
 def extract():
@@ -20,25 +24,36 @@ def extract():
     data = file.read()
     if not data:
         return jsonify({"detail": "File is empty"}), 400
-
-    filename = file.filename
-    ext = Path(filename).suffix.lower()
-
+    ext = Path(file.filename).suffix.lower()
     try:
         text = parse_file(ext, data)
     except Exception as e:
         return jsonify({"detail": str(e)}), 400
-
     if not text.strip():
         return jsonify({"detail": "No readable text found"}), 400
-
     try:
         tasks = extract_tasks(text)
     except Exception as e:
         return jsonify({"detail": str(e)}), 500
-
     preview = text[:300] + ("..." if len(text) > 300 else "")
-    return jsonify({"status": "success", "filename": filename, "file_type": ext, "transcript_preview": preview, "total_tasks": len(tasks), "tasks": tasks})
+    return jsonify({
+        "status": "success",
+        "filename": file.filename,
+        "file_type": ext,
+        "transcript_preview": preview,
+        "total_tasks": len(tasks),
+        "tasks": tasks
+    })
+
+@app.route('/api/supported-formats')
+def formats():
+    return jsonify({"formats": [
+        {"ext": ".txt",  "label": "Plain Text"},
+        {"ext": ".docx", "label": "Word Document"},
+        {"ext": ".pdf",  "label": "PDF"},
+        {"ext": ".srt",  "label": "Subtitle SRT"},
+        {"ext": ".vtt",  "label": "Subtitle VTT"},
+    ]})
 
 def parse_file(ext, data):
     NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -61,7 +76,11 @@ def parse_file(ext, data):
         lines = []
         for line in data.decode("utf-8", errors="ignore").splitlines():
             line = line.strip()
-            if not line or line.isdigit() or re.match(r"[\d:]+[\.,]\d+\s*-->", line) or line.startswith("WEBVTT"):
+            if not line or line.isdigit():
+                continue
+            if re.match(r"[\d:]+[\.,]\d+\s*-->", line):
+                continue
+            if line.startswith("WEBVTT"):
                 continue
             lines.append(line)
         return "\n".join(lines)
@@ -84,18 +103,24 @@ def extract_tasks(transcript):
     key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
         raise RuntimeError("GEMINI_API_KEY missing")
-
     for version in ["v1", "v1beta"]:
         try:
             url = f"https://generativelanguage.googleapis.com/{version}/models?key={key}"
             with urllib.request.urlopen(url, timeout=10) as r:
-                data = json.loads(r.read().decode("utf-8"))
-            for m in data.get("models", []):
+                models = json.loads(r.read().decode("utf-8"))
+            for m in models.get("models", []):
                 if "generateContent" in m.get("supportedGenerationMethods", []):
                     model_name = m["name"].replace("models/", "")
                     api_url = f"https://generativelanguage.googleapis.com/{version}/models/{model_name}:generateContent?key={key}"
-                    body = json.dumps({"contents": [{"parts": [{"text": PROMPT.format(transcript=transcript)}]}], "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096}}).encode("utf-8")
-                    req = urllib.request.Request(api_url, data=body, headers={"Content-Type": "application/json"}, method="POST")
+                    body = json.dumps({
+                        "contents": [{"parts": [{"text": PROMPT.format(transcript=transcript)}]}],
+                        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096}
+                    }).encode("utf-8")
+                    req = urllib.request.Request(
+                        api_url, data=body,
+                        headers={"Content-Type": "application/json"},
+                        method="POST"
+                    )
                     with urllib.request.urlopen(req, timeout=60) as resp:
                         result = json.loads(resp.read().decode("utf-8"))
                     raw = result["candidates"][0]["content"]["parts"][0]["text"]
@@ -106,7 +131,7 @@ def extract_tasks(transcript):
 
 def parse_json(raw):
     if not raw: return []
-    t = re.sub(r"`json|`", "", raw).strip()
+    t = re.sub(r"```json|```", "", raw).strip()
     try:
         r = json.loads(t)
         return r if isinstance(r, list) else []
