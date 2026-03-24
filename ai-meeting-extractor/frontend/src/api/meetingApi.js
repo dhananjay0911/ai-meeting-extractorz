@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE = '/api'
+const API_BASE = 'https://ai-meeting-backend-hyi0.onrender.com/'
 
 export const extractTasks = async (file) => {
   const formData = new FormData()
