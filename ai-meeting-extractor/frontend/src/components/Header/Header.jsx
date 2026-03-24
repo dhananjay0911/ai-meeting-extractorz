@@ -22,7 +22,7 @@ const Header = () => {
         <div className="header__tags">
           <span className="tag">Gemini  AI</span>
           <span className="tag"> NLP</span>
-          <span className="tag">FastAPI</span>
+          <span className="tag">Flask</span>
         </div>
       </div>
     </header>

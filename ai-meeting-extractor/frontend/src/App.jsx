@@ -60,7 +60,7 @@ const App = () => {
                 <div className="app-loading__steps">
                   <Step text="Parsing file..." done />
                   <Step text="Running NLP analysis..." done={false} active />
-                  <Step text="Extracting tasks with Claude AI..." done={false} />
+                  <Step text="Extracting tasks with Gemini AI..." done={false} />
                   <Step text="Building results..." done={false} />
                 </div>
               </div>
